@@ -96,11 +96,36 @@ CompileUtil = {
         // 文本处理
         let updateFn = this.updater['textUpdater'];
         let value = this.getTextVal(vm, text);
+        text.replace(/\{\{([^]+)\}\}/g, (...arguments) => {
+            new Watcher(vm, arguments[1], (newValue)=>{
+                updateFn && updateFn(node, this.getTextVal(vm, text));
+            })
+        })
+        
         updateFn && updateFn(node, value);
+    },
+    // 修改数据
+    setVal(vm, expr, value) {
+        expr = expr.split('.');
+        // 收敛
+        return expr.reduce((prev, next, currentIndex)=>{
+            if(currentIndex == expr.length-1) {
+                return prev[next] = value;
+            }
+            return prev[next];
+        }, vm.$data)
     },
     model(node, vm, value) {
         // 输入框处理
         let updateFn = this.updater['modelUpdater'];
+        new Watcher(vm, value, (newValue)=>{
+            updateFn && updateFn(node, this.getVal(vm, value));
+        })
+        node.addEventListener('input', (e)=> {
+            let newVal = e.target.value;
+            this.setVal(vm, value, newVal);
+
+        })
         updateFn && updateFn(node, this.getVal(vm, value)); 
     },
     updater: {
